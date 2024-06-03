@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rendite Schätzer</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Include Navigation -->
+    <div id="navigation"></div>
+
+    <div class="container">
+        <h1 class="text-center mb-4">Rendite Schätzer</h1>
+        <h2 class="result text-center">Nettorendite: <span id="nettoRendite"></span></h2>
+        <h2 class="nettoertrag text-center">Nettoertrag: <span id="nettoertrag"></span></h2>
+
+        <div class="mb-3">
+            <label for="kaufpreis" class="form-label">Kaufpreis (in Mio.):</label>
+            <input type="number" class="form-control" id="kaufpreis" step="0.1">
+        </div>
+        <div class="mb-3">
+            <label for="miete" class="form-label">Schätzwert Miete / Mt. (in Tsd):</label>
+            <input type="number" class="form-control" id="miete" step="0.1">
+            <small id="jahresmiete" class="form-text text-muted">Mietertrag: </small>
+        </div>
+        <div class="mb-3">
+            <label for="eigenmittel" class="form-label">Eigenmittel (in Mio.):</label>
+            <input type="number" class="form-control" id="eigenmittel" step="0.1" value="1">
+        </div>
+        <div class="mb-3">
+            <label for="fremdmittel" class="form-label">Fremdmittel (in Mio.):</label>
+            <input type="text" class="form-control" id="fremdmittel" readonly>
+        </div>
+        <div class="mb-3">
+            <label for="hypothekarzins" class="form-label">Hypothekarzins (in %):</label>
+            <input type="number" class="form-control" id="hypothekarzins" step="0.1" value="2.5">
+            <small id="zinskosten" class="form-text text-muted">Zinskosten: </small>
+        </div>
+        <div class="mb-3">
+            <label for="verwaltungskosten" class="form-label">Verwaltungskosten (in %):</label>
+            <input type="number" class="form-control" id="verwaltungskosten" step="0.1" value="20">
+            <small id="betriebskosten" class="form-text text-muted">Betriebskosten: </small>
+        </div>
+        <div class="chart-container">
+            <canvas id="moneyFlowChart"></canvas>
+        </div>
+        <div class="footer">
+            © Ein Service von Matthias Mattenberger. <br> Alle Angaben ohne Gewähr.
+        </div>
+    </div>
+    <script>
+        function parseNumber(value) {
+            return parseFloat(value.replace(/[\s']/g, '').replace(',', '.')) || 0;
+        }
+
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "'");
+        }
+
+        function formatCurrency(num) {
+            return 'CHF ' + formatNumber(Math.round(num)) + ' / Jahr';
+        }
+
+        function calculate() {
+            var kaufpreis = parseNumber(document.getElementById('kaufpreis').value);
+            var miete = parseNumber(document.getElementById('miete').value);
+            var eigenmittel = parseNumber(document.getElementById('eigenmittel').value);
+            var hypothekarzins = parseNumber(document.getElementById('hypothekarzins').value);
+            var verwaltungskosten = parseNumber(document.getElementById('verwaltungskosten').value);
+
+            var fremdmittel = kaufpreis - eigenmittel;
+            document.getElementById('fremdmittel').value = fremdmittel ? formatNumber(fremdmittel.toFixed(2)) : '';
+
+            var jahresmiete = miete * 1000 * 12;
+            var betriebsVerwaltungskosten = jahresmiete * (verwaltungskosten / 100);
+            var zinskosten = fremdmittel * 1000000 * (hypothekarzins / 100);
+            var nettoertrag = (jahresmiete * (1 - (verwaltungskosten / 100))) - zinskosten;
+            var nettoRendite = (nettoertrag / (kaufpreis * 1000000)) * 100;
+
+            document.getElementById('nettoRendite').innerText = isFinite(nettoRendite) ? nettoRendite.toFixed(2).replace('.', ',') + ' %' : '';
+            document.getElementById('zinskosten').innerText = isFinite(zinskosten) ? formatCurrency(zinskosten) : '';
+            document.getElementById('jahresmiete').innerText = isFinite(jahresmiete) ? formatCurrency(jahresmiete) : '';
+            document.getElementById('betriebskosten').innerText = isFinite(betriebsVerwaltungskosten) ? formatCurrency(betriebsVerwaltungskosten) : '';
+            document.getElementById('nettoertrag').innerText = isFinite(nettoertrag) ? formatCurrency(nettoertrag) : '';
+
+            if (nettoRendite < 1) {
+                document.getElementById('nettoRendite').style.color = 'red';
+            } else if (nettoRendite < 2) {
+                document.getElementById('nettoRendite').style.color = '#ff8c00';
+            } else {
+                document.getElementById('nettoRendite').style.color = 'green';
+            }
+
+            updateChart(jahresmiete, betriebsVerwaltungskosten, zinskosten, nettoertrag);
+        }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+        }
+
+        function updateChart(miete, verwaltung, zins, ertrag) {
+            var ctx = document.getElementById('moneyFlowChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Miete', 'Verwaltungskosten', 'Zinskosten', 'Nettoertrag'],
+                    datasets: [{
+                        label: 'Geldfluss',
+                        data: [miete, verwaltung, zins, ertrag],
+                        backgroundColor: ['#4CAF50', '#FFC107', '#F44336', '#2196F3'],
+                        borderColor: ['#4CAF50', '#FFC107', '#F44336', '#2196F3'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        document.getElementById('calculate').addEventListener('click', calculate);
+    </script>
+</body>
+</html>

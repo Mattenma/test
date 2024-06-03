@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprechzeit</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Include Navigation -->
+    <div id="navigation"></div>
+
+    <div class="timer-container">
+        <h1>Sprechzeit</h1>
+        <p>Geben Sie den Text ein, um die Sprechzeit zu berechnen:</p>
+        <textarea id="text-input" class="input-field" placeholder="Geben Sie hier Ihren Text ein..."></textarea>
+        <div class="time-control">
+            <button onclick="calculateSpeakingTime()">Berechnen</button>
+            <input type="number" id="speaking-speed" value="120" min="50" max="300">
+            <label for="speaking-speed">Wörter/Minute</label>
+        </div>
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        // Load navigation.html into the navigation div
+        fetch('navigation.html')
+            .then(response => response.text())
+            .then(data => document.getElementById('navigation').innerHTML = data);
+
+        document.getElementById('text-input').addEventListener('input', function () {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+
+        function calculateSpeakingTime() {
+            const text = document.getElementById('text-input').value;
+            const words = text.split(/\s+/).filter(word => word.length > 0);
+            const wordCount = words.length;
+            const speakingSpeed = document.getElementById('speaking-speed').value;
+            const speakingTimeMinutes = wordCount / speakingSpeed;
+            const speakingTimeSeconds = Math.round(speakingTimeMinutes * 60);
+
+            document.getElementById('result').innerHTML = `Die geschätzte Sprechzeit beträgt <b>${speakingTimeSeconds}</b> Sekunden.`;
+        }
+    </script>
+</body>
+</html>
