@@ -18,7 +18,8 @@
         // Load navigation.html into the navigation div
         fetch('navigation.html')
             .then(response => response.text())
-            .then(data => document.getElementById('navigation').innerHTML = data);
+            .then(data => document.getElementById('navigation').innerHTML = data)
+            .catch(error => console.error('Error loading navigation:', error));
     </script>
 </body>
 </html>
